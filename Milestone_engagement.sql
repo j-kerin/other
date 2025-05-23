@@ -10,19 +10,32 @@ create temporary table  numbers AS (
     -- can add more than 6 weeks here if wanted
 );
 
+create temp table first_sub_invoice as (
+select sif.provider_id
+	, min(sif.subscription_invoice_paid_date ):: date first_sub_payment
+from subscriptions_invoice_fact sif
+where  is_refunded = 0
+and stripe_charge_status = 1
+and invoice_paid_status = 1
+group by 1
+having first_sub_payment >= '2025-03-01'
+);
+
 create temporary table provider_weeks AS (
     SELECT 
         p.provider_id,
-        DATEADD(week, n.week_num, p.signup_dt) AS base_date,
+        DATEADD(week, n.week_num, p.first_sub_payment) AS base_date,
+        -- shift all pros to same week cycle if needed
+        -- DATEADD(week, n.week_num, DATE_TRUNC('week', p.first_sub_payment) + INTERVAL '6 days') AS base_date,
         n.week_num AS week_number
     FROM 
-        analytics.onboarding_progress_pros p  
+        first_sub_invoice p  
         CROSS JOIN numbers n
     WHERE 
         -- p.provider_id = 2337617  -- Replace with your specific provider_id 
-    	p.signup_dt = '2025-03-01'-- between '2025-03-15' and '2025-04-01' -- replace with what signup dates your looking for
+    	p.first_sub_payment  between '2025-03-15' and '2025-04-01' -- replace with what subscription dates your looking for
+    		
 );
-
 
 create temporary table provider_weekly as (
 SELECT 
