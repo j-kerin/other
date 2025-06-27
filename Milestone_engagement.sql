@@ -125,12 +125,14 @@ with base_data as (
         aau.unique_visit_days, 
         aau.app_active_user_flag as is_app_active_user,
         fps.Pro_profile_pmm_segmentation,
+        dp.braze_external_id ,
         row_number() over (partition by pw.provider_id order by pw.week_number desc) as row_num
     from provider_weekly pw
     left join weekly_rev wr on wr.provider_id = pw.provider_id and pw.week_number = wr.week_number
     left join weekly_mp mp on mp.provider_id = pw.provider_id and pw.week_number = mp.week_number
     left join weekly_aau aau on aau.provider_id = pw.provider_id and pw.week_number = aau.week_number
     left join dw_analytics.fct_pro_segmentation fps on fps.provider_id = pw.provider_id and fps.as_of_date = pw.week_end_date
+    left join analytics.dim_provider dp on dp.provider_id = pw.provider_id
     where pw.week_end_date <= current_date -- getting rid of future and partial weeks
 ),
 profile_views_past_weeks as (
